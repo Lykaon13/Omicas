@@ -1,0 +1,100 @@
+---
+title: "PEC 1"
+author: "JMST"
+date: "2024-10-30"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## PEC 1
+
+```{r librarys}
+library(httr2)
+library(GEOquery)
+library(readxl)
+library(SummarizedExperiment)
+
+```
+
+## 1. Archivo
+
+Para este ejercicio vamos a utilizar los datos del github que se nos proporciona, en concreto el estudio "NMR data from a gastric cancer study used in a metabolomics data analysis tutorial". 
+Nos descargamos el archivo en excel con los datos a una carpeta incluida en el proyecto y lo pasamos a una variable.
+
+```{r file}
+#Cargamos el archivo csv
+temp_file <- "datos/GastricCancer_NMR.xlsx"
+data <- read_excel(temp_file)
+colnames(data)
+head(data)
+
+```
+
+## 2. Datos
+```{r data}
+#preparamos estos datos como un dataframe
+#Las dos primeras columnas se excluyen porque son el ID del metabolito y las otras dos son el tipo de muestra y la clase
+expression_data <- as.matrix(data[, -(1:4)])  
+
+#Creamos metadatos para los metabolitos (filas)
+metadatos_filas <- DataFrame(metabolite_id = data[[1]])
+
+#Creamos metadatos para las muestras (columnas)
+sample_ids <- colnames(expression_data)
+metadatos_columnas <- DataFrame(sample_id = sample_ids)
+
+#Hacemos el objeto summarizedExperiment
+se <- SummarizedExperiment(
+    assays = list(counts = expression_data),
+    rowData = metadatos_filas,
+    colData = metadatos_columnas
+)
+
+```
+
+3. Exploración del dataset
+```{r dataset}
+#Vemos las caracteristicas del objeto 
+se
+
+#podemos ver los primeros datos
+head(assay(se))
+
+#los nombres de las muestras
+colData(se)
+
+#Los id de las muestras
+rowData(se)
+
+#separamos la matriz principal
+data_counts <- assay(se)
+
+#calculamos estadísticas descriptivas para los metabolitos
+metabolite_means <- rowMeans(data_counts, na.rm = TRUE)
+metabolite_sds <- rowSds(data_counts, na.rm = TRUE)
+metabolite_medians <- rowMedians(data_counts, na.rm = TRUE)
+
+# Hacemos el resumen básico
+summary(metabolite_means)
+summary(metabolite_sds)
+summary(metabolite_medians)
+```
+
+```{r graficos}
+#realizamos un gráfico en caja para ver valóres atípicos de la muestra
+boxplot(data_counts, main = "Distribución de Intensidades de Metabolitos en Muestras", las = 2,
+        xlab = "Muestras", ylab = "Intensidad", col = "lightblue", outline = FALSE)
+
+#Un histograma de intensidades para ver su distribución
+hist(data_counts, main = "Distribución de Intensidades de Metabolitos",
+     xlab = "Intensidad", col = "lightgreen", breaks = 30)
+
+
+```
+
+## Enlaces
+Todo el proyecto se encuentra subido a la siguiente dirección de GitHub:
+https://github.com/Lykaon13/Omicas
